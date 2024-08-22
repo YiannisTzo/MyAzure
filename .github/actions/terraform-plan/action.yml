@@ -5,18 +5,27 @@ inputs:
   tf-version:  
     description: 'Terraform Version'
     required: true
-    default: '1.6.6'
-  gcp-storage-bucket-name:
-    description: 'Name of the GCP storage bucket'
+    default: '1.9.5'
+  az_storage_acc:
+    description: 'Name of the Azure Storage Account'
     required: true
-  gcp-storage-bucket-prefix: 
-    description: 'Prefix of the GCP storage bucket'
+  az_container_name: 
+    description: 'Name of the Azure Storage Container'
     required: true 
-  gcp-service-account-id: 
-    description: 'Email ID of the GCP service account'
+  az_resource_group: 
+    description: 'Name of the Azure Resource Group hosting the backend storage'
     required: true 
-  gcp-service-account-creds: 
-    description: 'Credentials of the GCP service account'
+  arm_client_id: 
+    description: 'Azure Client ID for service principal'
+    required: true 
+  arm_client_secret: 
+    description: 'Azure Client Secret for service principal'
+    required: true 
+  arm_subscription_id: 
+    description: 'Azure Subscription ID'
+    required: true 
+  arm_tenant_id: 
+    description: 'Azure Tenant ID'
     required: true 
   item-name: 
     description: 'Name of the project item in development'
@@ -36,14 +45,14 @@ runs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
       with:
-        terraform_version: ${{ inputs.terraform-version }}
+        terraform_version: ${{ inputs.tf-version }}
         terraform_wrapper: false
 
     # Python set up (used for Checkov)
-    - name: Set up Python 3.8
+    - name: Set up Python 3.x
       uses: actions/setup-python@v4
       with:
-        python-version: 3.8
+        python-version: '3.x'
 
     ##################################
     # TFLint
@@ -69,10 +78,13 @@ runs:
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Initialise
       shell: bash
-      run: 'terraform init -backend-config=bucket=${{ inputs.gcp-storage-bucket-name }} -backend-config=prefix=${{ inputs.gcp-storage-bucket-prefix }}/${{ inputs.item-name }} -backend-config=impersonate_service_account=${{ inputs.gcp-service-account-id }}'
+      run: terraform init -backend-config="storage_account_name=${{ inputs.az_storage_acc }}" -backend-config="container_name=${{ inputs.az_container_name }}" -backend-config="key=azure.tfstate" -backend-config="resource_group_name=${{ inputs.az_resource_group }}" -backend-config="subscription_id=${{ inputs.arm_subscription_id }}" -backend-config="tenant_id=${{ inputs.arm_tenant_id }}" -backend-config="client_id=${{ inputs.arm_client_id }}" -backend-config="client_secret=${{ inputs.arm_client_secret }}"
       working-directory: ${{ inputs.working-directory }}
       env:
-        GOOGLE_CREDENTIALS: ${{ inputs.gcp-service-account-creds }}
+        ARM_CLIENT_ID: ${{ inputs.arm_client_id }}
+        ARM_CLIENT_SECRET: ${{ inputs.arm_client_secret }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.arm_subscription_id }}
+        ARM_TENANT_ID: ${{ inputs.arm_tenant_id }}
 
     # Validate
     - name: Terraform Validate
@@ -85,8 +97,6 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: terraform plan -input=false -out=plan.tfplan
-      env:
-        GOOGLE_CREDENTIALS: ${{ inputs.gcp-service-account-creds }}
 
     # Create plan summary
     - name: "Create plan summary"

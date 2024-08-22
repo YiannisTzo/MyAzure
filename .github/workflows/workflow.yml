@@ -1,0 +1,40 @@
+name: Azure Workflow
+env:
+  TERRAFORM_VERSION: '1.9.5'
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        
+      - name: Run Terraform Plan
+        uses: ./.github/actions/terraform-plan
+        with:
+          tf-version: ${{ env.TERRAFORM_VERSION }}       # Specifies version of Terraform to use
+          tf_vars_file: "tfvars-file-name"               # Specifies Terraform TFVARS file name inside module path
+          tf_key: "state-file-name"                      # Specifies name for terraform state file and plan artifact
+          az_resource_group: "resource-group-name"       # AZURE Resource Group hosting terraform backend storage account
+          az_storage_acc: "storage-account-name"         # AZURE terraform backend storage account
+          az_container_name: "container-name"            # AZURE storage container hosting state files
+          arm_client_id: ${{ secrets.CLIENT_ID }}        # ARM Client ID 
+          arm_client_secret: ${{ secrets.CLIENT_SECRET }}# ARM Client Secret
+          arm_subscription_id: ${{ secrets.SUBSCRIPTION_ID }} # ARM Subscription ID
+          arm_tenant_id: ${{ secrets.TENANT_ID }}             # ARM Tenant ID
