@@ -1,0 +1,2 @@
+disabled_checks="CKV_AZURE_183,CKV_AZURE_33,CKV2_AZURE_18,CKV2_AZURE_1"
+enabled_checks=""

@@ -1,0 +1,81 @@
+# Terraform Apply
+name: 'Terraform Apply'
+description: 'Terraform Apply Tasks'
+inputs:
+  tf-version:  
+    description: 'Terraform Version'
+    required: true
+    default: '1.6.6'
+  gcp-storage-bucket-name:
+    description: 'Name of the GCP storage bucket'
+    required: true
+  gcp-storage-bucket-prefix: 
+    description: 'Prefix of the GCP storage bucket'
+    required: true 
+  gcp-service-account-id: 
+    description: 'Email ID of the GCP service account'
+    required: true 
+  gcp-service-account-creds: 
+    description: 'Credentials of the GCP service account'
+    required: true 
+  item-name: 
+    description: 'Name of the project item in development'
+    required: true 
+  working-directory:
+    description: 'Directory where the Terraform test files are hosted'
+    required: true 
+runs:
+  using: "composite"
+  steps:
+   # Download plan artifact
+    - name: "Download Terraform Plan Artifact" 
+      uses: actions/download-artifact@v3
+      with:
+        name: tf-plan
+        path: /tmp/
+
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: ${{ inputs.terraform-version }}
+        terraform_wrapper: false
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Initialise
+      shell: bash
+      run: 'terraform init -backend-config=bucket=${{ inputs.gcp-storage-bucket-name }} -backend-config=prefix=${{ inputs.gcp-storage-bucket-prefix }}/${{ inputs.item-name }} -backend-config=impersonate_service_account=${{ inputs.gcp-service-account-id }}'
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        GOOGLE_CREDENTIALS: ${{ inputs.gcp-service-account-creds }}
+    
+    # Validate
+    - name: Terraform Validate
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: terraform validate
+
+    # Generates an execution plan for Terraform
+    - name: Terraform Plan
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: terraform plan -input=false -out=apply.tfplan
+      env:
+        GOOGLE_CREDENTIALS: ${{ inputs.gcp-service-account-creds }}
+
+    # Diff check plan from earlier stage with new plan
+    - name: "Check plan validity"
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -eux  # ensure pipeline stops if terraform fails or diff reports a difference
+        terraform show -no-color apply.tfplan > /tmp/tf-apply.tfplan
+        diff -u /tmp/tf-plan.tfplan /tmp/tf-apply.tfplan
+
+    # Run Terraform Apply based on plan artifact
+    - name: "Terraform Apply"
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: terraform apply -auto-approve -input=false
+      env:
+        GOOGLE_CREDENTIALS: ${{ inputs.gcp-service-account-creds }}

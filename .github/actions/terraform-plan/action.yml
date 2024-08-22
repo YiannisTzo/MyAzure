@@ -1,0 +1,118 @@
+# Terraform Plan
+name: 'Terraform Plan'
+description: 'Terraform Plan Tasks'
+inputs:
+  tf-version:  
+    description: 'Terraform Version'
+    required: true
+    default: '1.6.6'
+  gcp-storage-bucket-name:
+    description: 'Name of the GCP storage bucket'
+    required: true
+  gcp-storage-bucket-prefix: 
+    description: 'Prefix of the GCP storage bucket'
+    required: true 
+  gcp-service-account-id: 
+    description: 'Email ID of the GCP service account'
+    required: true 
+  gcp-service-account-creds: 
+    description: 'Credentials of the GCP service account'
+    required: true 
+  item-name: 
+    description: 'Name of the project item in development'
+    required: true 
+  working-directory:
+    description: 'Directory where the Terraform test files are hosted'
+    required: true 
+  checkov-skip-check:
+    description: 'Checkov Skip Checks'
+    required: no
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: ${{ inputs.terraform-version }}
+        terraform_wrapper: false
+
+    # Python set up (used for Checkov)
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.8
+
+    ##################################
+    # TFLint
+    ##################################
+    - uses: terraform-linters/setup-tflint@v3
+      name: Setup TFLint
+      with:
+        tflint_version: latest
+
+    - name: Init TFLint
+      shell: bash
+      run: tflint --init
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+
+    - name: Run TFLint
+      shell: bash
+      run: tflint --recursive
+
+    ##################################
+    # Terraform
+    ##################################
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Initialise
+      shell: bash
+      run: 'terraform init -backend-config=bucket=${{ inputs.gcp-storage-bucket-name }} -backend-config=prefix=${{ inputs.gcp-storage-bucket-prefix }}/${{ inputs.item-name }} -backend-config=impersonate_service_account=${{ inputs.gcp-service-account-id }}'
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        GOOGLE_CREDENTIALS: ${{ inputs.gcp-service-account-creds }}
+
+    # Validate
+    - name: Terraform Validate
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: terraform validate
+
+    # Generates an execution plan for Terraform
+    - name: Terraform Plan
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: terraform plan -input=false -out=plan.tfplan
+      env:
+        GOOGLE_CREDENTIALS: ${{ inputs.gcp-service-account-creds }}
+
+    # Create plan summary
+    - name: "Create plan summary"
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: terraform show -no-color plan.tfplan > /tmp/tf-plan.tfplan
+
+    ##################################
+    # Checkov
+    ##################################
+    # Run Checkov scans
+    - name: Test with Checkov
+      id: checkov
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: ${{ inputs.working-directory }}
+        framework: terraform
+        quiet: true
+        skip_check: ${{ inputs.checkov-skip-check }}
+      env:
+        GITHUB_OVERRIDE_URL: true  # optional: this can be used to instruct the action to override the global GIT config to inject the PAT to the URL
+
+    # Output plan as artifact
+    - name: "Upload Terraform Plan Artifact" 
+      uses: actions/upload-artifact@v3
+      with:
+        name: tf-plan
+        path: /tmp/tf-plan.tfplan
+        if-no-files-found: error
