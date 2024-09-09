@@ -1,7 +1,7 @@
 name: Azure Workflow
 env:
   TERRAFORM_VERSION: '1.9.5'
-  CONTAINER_NAME: tfstate
+  TERRAFORM_FILES_PATH: './calling_modules'
 
 on:
   push:
@@ -33,6 +33,7 @@ jobs:
           tf_vars_file: "tfvars-file-name"                            # Specifies Terraform TFVARS file name inside module path
           tf_key: "state-file-name"                                   # Specifies name for terraform state file and plan artifact
           az_resource_group: "resource-group-name"                    # AZURE Resource Group hosting terraform backend storage account
+          working-directory: ${{ env.TERRAFORM_FILES_PATH }}
           az_storage_acc: ${{ env.STORAGE_ACCOUNT_NAME }}                      # AZURE terraform backend storage account
           az_container_name: ${{ env.CONTAINER_NAME }}                # AZURE storage container hosting state files
           arm_client_id: ${{ secrets.CLIENT_ID }}                     # ARM Client ID 
