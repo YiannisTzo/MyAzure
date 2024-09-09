@@ -35,7 +35,7 @@ inputs:
     required: true 
   checkov-skip-check:
     description: 'Checkov Skip Checks'
-    required: no
+    required: false
     default: ""
 
 runs:
