@@ -21,7 +21,7 @@ variable "subnet_config" {
     is_applicable          = string
     resource_group_name    = string
     virtual_network_name   = string
-    allow_private_endpoint = bool
+    allow_private_endpoint = optional(bool, false)  # Optional boolean with default false
     service_endpoints      = list(string)
     delegation_config = map(object({
       service_delegation = object({

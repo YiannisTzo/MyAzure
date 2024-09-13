@@ -9,6 +9,14 @@ variable "global_tags" {
 variable "region" {
   type = string
 }
+
+variable "ip_forwarding_enabled" {
+  type = optional(bool, false)
+}
+
+variable "accelerated_networking_enabled" {
+  type = optiona(bool, false)
+}
 variable "vm_network_interface_config" {
   type = map(object({
     provider_alias      = string
@@ -23,8 +31,6 @@ variable "vm_network_interface_config" {
       private_ip_address            = string
     })
     dns_servers                   = list(string)
-    enable_ip_forwarding          = bool
-    enable_accelerated_networking = bool
   }))
 }
 

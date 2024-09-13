@@ -18,7 +18,7 @@ variable "route_tables_config" {
     resource_group_name = string
     tags                = map(string)
 
-    disable_bgp_route_propagation = bool
+    bgp_route_propagation_enabled = bool
 
     routing_rules = list(object({
       rule_name            = string

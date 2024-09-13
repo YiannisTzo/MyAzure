@@ -37,7 +37,6 @@ resource "azurerm_role_assignment" "user_identity_role_assignment" {
   timeouts {
     create = var.crud_timeouts.create
     read   = var.crud_timeouts.read
-    update = var.crud_timeouts.update
     delete = var.crud_timeouts.delete
   }
 }
@@ -52,7 +51,6 @@ resource "azurerm_role_assignment" "resource_role_assignment" {
   timeouts {
     create = var.crud_timeouts.create
     read   = var.crud_timeouts.read
-    update = var.crud_timeouts.update
     delete = var.crud_timeouts.delete
   }
 }

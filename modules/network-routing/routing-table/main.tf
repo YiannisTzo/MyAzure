@@ -3,7 +3,7 @@ resource "azurerm_route_table" "route_tables" {
   name                          = each.key
   location                      = var.region
   resource_group_name           = each.value.resource_group_name
-  disable_bgp_route_propagation = each.value.disable_bgp_route_propagation
+  bgp_route_propagation_enabled = each.value.bgp_route_propagation_enabled
 
   # add routing rules now
   dynamic "route" {

@@ -12,6 +12,9 @@ resource "azurerm_network_interface" "vm_network_interface" {
   location            = var.region
   resource_group_name = each.value.resource_group_name
   tags                = merge(var.global_tags, each.value.tags)
+  ip_forwarding_enabled = var.ip_forwarding_enabled
+  accelerated_networking_enabled = var.accelerated_networking_enabled
+
   ip_configuration {
     name                          = each.value.ip_configuration.name
     subnet_id                     = var.ref_data.subnet_data[format("%s-%s", each.value.ip_configuration.vnet_name, each.value.ip_configuration.subnet_id)].id
@@ -19,8 +22,6 @@ resource "azurerm_network_interface" "vm_network_interface" {
     private_ip_address            = each.value.ip_configuration.private_ip_address
   }
   dns_servers                   = each.value.dns_servers
-  enable_ip_forwarding          = each.value.enable_ip_forwarding
-  enable_accelerated_networking = each.value.enable_accelerated_networking
   timeouts {
     create = var.crud_timeouts.create
     read   = var.crud_timeouts.read
