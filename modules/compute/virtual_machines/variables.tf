@@ -11,11 +11,13 @@ variable "region" {
 }
 
 variable "ip_forwarding_enabled" {
-  type = optional(bool, false)
+  type    = bool
+  default = false  # Set a default value to make the variable optional
 }
 
 variable "accelerated_networking_enabled" {
-  type = optiona(bool, false)
+  type    = bool
+  default = false  # Set a default value to make the variable optional
 }
 variable "vm_network_interface_config" {
   type = map(object({
