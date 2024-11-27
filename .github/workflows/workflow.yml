@@ -13,6 +13,13 @@ on:
       - main
       - develop
   workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: environment
+        options:
+          - dev
+          - prod
 
 permissions:
   contents: read
@@ -33,9 +40,9 @@ jobs:
           tf_vars_file: "tfvars-file-name"                            # Specifies Terraform TFVARS file name inside module path
           tf_key: "state-file-name"                                   # Specifies name for terraform state file and plan artifact
           az_resource_group: "resource-group-name"                    # AZURE Resource Group hosting terraform backend storage account
-          working-directory: ${{ env.TERRAFORM_FILES_PATH }}
-          az_storage_acc: ${{ vars.STORAGE_ACCOUNT_NAME }}                      # AZURE terraform backend storage account
-          az_container_name: ${{ vars.CONTAINER_NAME }}                # AZURE storage container hosting state files
+          working-directory: ${{ env.TERRAFORM_FILES_PATH }}          # AZURE Files path
+          az_storage_acc: ${{ vars.STORAGE_ACCOUNT_NAME }}            # AZURE terraform backend storage account
+          az_container_name: ${{ vars.CONTAINER_NAME }}               # AZURE storage container hosting state files
           arm_client_id: ${{ secrets.CLIENT_ID }}                     # ARM Client ID 
           arm_client_secret: ${{ secrets.CLIENT_SECRET }}             # ARM Client Secret
           arm_subscription_id: ${{ secrets.SUBSCRIPTION_ID }}         # ARM Subscription ID
