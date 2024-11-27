@@ -19,7 +19,7 @@ on:
         description: environment
         options:
           - dev
-          - prod
+          - pro
 
 permissions:
   contents: read
